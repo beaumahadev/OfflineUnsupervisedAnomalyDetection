@@ -1,8 +1,8 @@
-# Unsupervised Anomaly Detection on Time Series Data using Python and sklearn.
+# Unsupervised Anomaly Detection on Time Series Data using Python and sklearn
 ## Covers:
 #### -Kmeans clustering
 #### -Elliptic Envelope for Gaussian method
-#### -Markov Chain.
+#### -Markov Chain
 
 ## References:
 #### Heavily inspired by: 
