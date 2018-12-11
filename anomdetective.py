@@ -36,36 +36,37 @@ from fbprophet import Prophet
 # # 1 Data
 # ## 1.1 Extract data
 
-#Stored in two seperate CSVs
-df_temp1 = pd.read_csv("data/storage_temp_10min.csv")
-df_temp2 = pd.read_csv("data/storage_temp_10min_2.csv")
-
+#Takes in an array of file names corresponding to the data
+files= ["data/storage_temp_10min.csv","data/storage_temp_10min_2.csv"]
+df_temps= [pd.read_csv(f) for f in files]
 
 #%% [markdown]
-# ## 1.2 Check the data
+# ## 1.2 Create single dataframe
 
-print('Loaded:')
-print(df_temp1.info())
-print(df_temp2.info())
+df_temp = pd.concat(df_temps).reset_index(drop=True)
 
-
+print(df_temp.info())
 #%% [markdown]
 # ## 1.3 Format the data and graph the data
 
+headings= list(df_temp.columns.values)
+#Assumes the first coloumn is time "x" and the 2nd is the "y"
+timeStamp= headings[0]
+dataValues= headings[1]
+
+
+#%% [markdown]
 # change the type of timestamp column for plotting
-df_temp1['timestamp'] = pd.to_datetime(df_temp1['timestamp'])
-df_temp2['timestamp'] = pd.to_datetime(df_temp2['timestamp'])
+df_temp[timeStamp] = pd.to_datetime(df_temp[timeStamp])
+print(df_temp.info())
 
-
-#combine data into one data frame
-frames = [df_temp1, df_temp2]
-df_temp = pd.concat(frames).reset_index(drop=True)
-
+#%% [markdown]
 # change fahrenheit to °C (temperature mean= 71 -> fahrenheit)
-df_temp['Self Storage'] = (df_temp['Self Storage'] - 32) * 5/9
+df_temp[dataValues] = (df_temp[dataValues] - 32) * 5/9
 
 # plot the data
-df_temp.plot(x='timestamp', y='Self Storage')
+df_temp.plot(x=timeStamp, y=dataValues)
+
 
 
 
@@ -76,16 +77,25 @@ df_temp.plot(x='timestamp', y='Self Storage')
 
 
 #extract info for the months
-df_temp['month'] = df_temp['timestamp'].dt.month
+df_temp['month'] = df_temp[timeStamp].dt.month
+
+
+print(df_temp)
+#%% [markdown]
+
 #translate that into seasons
 df_temp['season'] = ((np.floor(df_temp['month']/3))%4).astype(int)
 
+
+
+
 seasonNames= ["winter","spring","summer","fall"]
+
 
 # histogram of season values
 fig, ax = plt.subplots()
 for i in range(0,4):
-    df_season=df_temp.loc[df_temp['season']==i, 'Self Storage']
+    df_season=df_temp.loc[df_temp['season']==i, dataValues]
     height, bins = np.histogram(df_season)
     ax.bar(bins[:-1], height*100/df_season.count(), width= .25, label= seasonNames[i])
 
@@ -114,7 +124,7 @@ for j in range(0,4):
 outliers_fraction = 0.03
 
 # Take the useful features [markdown]
-data = df_temp[['Self Storage', 'month', 'winter', 'spring', 'summer', 'fall']]
+data = df_temp[[dataValues, 'month', 'winter', 'spring', 'summer', 'fall']]
 
 #Many ML algorithms assume data in a standard distribution, so we scale the vectors
 min_max_scaler = preprocessing.StandardScaler()
@@ -178,14 +188,14 @@ plt.show()
 # Let's visualize the tagged anomaly points throughout time 
 
 # represent time as an int to plot easily
-df_temp['time_epoch'] = (df_temp['timestamp'].astype(np.int64)/100000000000).astype(np.int64)
+df_temp['time_epoch'] = (df_temp[timeStamp].astype(np.int64)/100000000000).astype(np.int64)
 
 fig, ax = plt.subplots()
 
-a = df_temp.loc[df_temp['anomaly21'] == 1, ['time_epoch', 'Self Storage']] #anomaly
+a = df_temp.loc[df_temp['anomaly21'] == 1, ['time_epoch', dataValues]] #anomaly
 
-ax.plot(df_temp['time_epoch'], df_temp['Self Storage'], color='blue')
-ax.scatter(a['time_epoch'],a['Self Storage'], color='red')
+ax.plot(df_temp['time_epoch'], df_temp[dataValues], color='blue')
+ax.scatter(a['time_epoch'],a[dataValues], color='red')
 plt.show()
 
 #%% [markdown]
@@ -203,7 +213,7 @@ plt.show()
 
 df_classes=[]
 for i in range(0,kmClusterSize+1):
-    df_class= df_temp.loc[df_temp['cluster'] == i, 'Self Storage']
+    df_class= df_temp.loc[df_temp['cluster'] == i, dataValues]
     #visualize the cluster
     df_class.hist(bins=32)
     #add
@@ -221,11 +231,10 @@ for c in df_classes:
     c = pd.DataFrame(c)
     c['deviation'] = envelope.decision_function(X_train)
     c['anomaly'] = envelope.predict(X_train)
-    a0 = c.loc[c['anomaly'] == 1, 'Self Storage']
-    b0 = c.loc[c['anomaly'] == -1, 'Self Storage']
+    a0 = c.loc[c['anomaly'] == 1, dataValues]
+    b0 = c.loc[c['anomaly'] == -1, dataValues]
     ax.hist([a0,b0], bins=32, stacked=True, color=['blue', 'red'])
     df_classesAnom.append(c)
-
 
 
 #%%
@@ -234,15 +243,14 @@ df_class=pd.concat(df_classesAnom)
 df_temp['anomaly22'] = df_class['anomaly']
 df_temp['anomaly22'] = np.array(df_temp['anomaly22'] == -1).astype(int) 
 
-print(df_temp)
 #%% [markdown]
 # Let's visualize the tagged anomaly points throughout time 
 fig, ax = plt.subplots()
 
-a = df_temp.loc[df_temp['anomaly22'] == 1, ('time_epoch', 'Self Storage')] #anomaly
+a = df_temp.loc[df_temp['anomaly22'] == 1, ('time_epoch', dataValues)] #anomaly
 
-ax.plot(df_temp['time_epoch'], df_temp['Self Storage'], color='blue')
-ax.scatter(a['time_epoch'],a['Self Storage'], color='red')
+ax.plot(df_temp['time_epoch'], df_temp[dataValues], color='blue')
+ax.scatter(a['time_epoch'],a[dataValues], color='red')
 plt.show()
 #%% [markdown]
 # Good at catching paticular spikes within seasonal behavior. 
@@ -251,13 +259,13 @@ plt.show()
 # #### Use for  sequential anomalies (ordered)
 # We need to discretize the data points in defined states for the Markov Chain. 
 # The Markov chain will calculate the probability of a paticular sequence of these states.
-# For this example we will take 'Self Storage' temperature and define 5 levels states depending temperature level.
+# For this example we will take dataValues temperature and define 5 levels states depending temperature level.
 # Definition of the states by temperature level:
-vL = (df_temp['Self Storage'] <=18).astype(int)
-L= ((df_temp['Self Storage'] > 18) & (df_temp['Self Storage']<=21)).astype(int)
-A = ((df_temp['Self Storage'] > 21) & (df_temp['Self Storage']<=24)).astype(int)
-H = ((df_temp['Self Storage'] > 24) & (df_temp['Self Storage']<=27)).astype(int)
-vH = (df_temp['Self Storage'] >27).astype(int)
+vL = (df_temp[dataValues] <=18).astype(int)
+L= ((df_temp[dataValues] > 18) & (df_temp[dataValues]<=21)).astype(int)
+A = ((df_temp[dataValues] > 21) & (df_temp[dataValues]<=24)).astype(int)
+H = ((df_temp[dataValues] > 24) & (df_temp[dataValues]<=27)).astype(int)
+vH = (df_temp[dataValues] >27).astype(int)
 
 #Parameters for our Markov Model 
 df_mm = vL + 2*L + 3*A + 4*H + 5*vH
@@ -279,10 +287,10 @@ df_temp['anomaly23'] = df_anomaly
 # visualisation of anomaly throughout time (viz 1)
 fig, ax = plt.subplots()
 
-a = df_temp.loc[df_temp['anomaly23'] == 1, ('time_epoch', 'Self Storage')] #anomaly
+a = df_temp.loc[df_temp['anomaly23'] == 1, ('time_epoch', dataValues)] #anomaly
 
-ax.plot(df_temp['time_epoch'], df_temp['Self Storage'], color='blue')
-ax.scatter(a['time_epoch'],a['Self Storage'], color='red')
+ax.plot(df_temp['time_epoch'], df_temp[dataValues], color='blue')
+ax.scatter(a['time_epoch'],a[dataValues], color='red')
 plt.show()
 
 
