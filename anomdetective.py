@@ -58,9 +58,7 @@ dataValues= headings[1]
 #%% [markdown]
 # change the type of timestamp column for plotting
 df_temp[timeStamp] = pd.to_datetime(df_temp[timeStamp])
-print(df_temp.info())
 
-#%% [markdown]
 # change fahrenheit to °C (temperature mean= 71 -> fahrenheit)
 df_temp[dataValues] = (df_temp[dataValues] - 32) * 5/9
 
@@ -78,10 +76,6 @@ df_temp.plot(x=timeStamp, y=dataValues)
 
 #extract info for the months
 df_temp['month'] = df_temp[timeStamp].dt.month
-
-
-print(df_temp)
-#%% [markdown]
 
 #translate that into seasons
 df_temp['season'] = ((np.floor(df_temp['month']/3))%4).astype(int)
@@ -112,7 +106,7 @@ for j in range(0,4):
     df_temp[seasonNames[j]]= (df_temp['season']==j).astype(int)
 
 #%% [markdown]
-# # 2 Models
+# # 2 Non-Predictive Models
 # ## 2.1 Cluster only
 # #### Use for collective anomalies (unordered). 
 # 
@@ -298,3 +292,7 @@ plt.show()
 # It seems that the Markov Model is good at detecting abnormalities in the sequence/cycling of temperature. 
 # This could be very good for our purposes, but it is harder to test for meaningful anomalies. 
 
+
+#%% [markdown]
+# ## 3 Predictive Models
+# #### Use for  sequential anomalies (ordered)
