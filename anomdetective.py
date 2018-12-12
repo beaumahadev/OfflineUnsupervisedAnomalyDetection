@@ -37,15 +37,15 @@ from fbprophet import Prophet
 # ## 1.1 Extract data
 
 #Takes in an array of file names corresponding to the data
-files= ["data/storage_temp_10min.csv","data/storage_temp_10min_2.csv"]
+files= ["data/StoreFriendly_kWh.csv"]
 df_temps= [pd.read_csv(f) for f in files]
-
 #%% [markdown]
 # ## 1.2 Create single dataframe
 
 df_temp = pd.concat(df_temps).reset_index(drop=True)
 
-print(df_temp.info())
+
+print(df_temp)
 #%% [markdown]
 # ## 1.3 Format the data and graph the data
 
@@ -82,16 +82,18 @@ df_temp['season'] = ((np.floor(df_temp['month']/3))%4).astype(int)
 
 
 
-
 seasonNames= ["winter","spring","summer","fall"]
 
+df_seasons= list(df_temp["season"].unique())
 
 # histogram of season values
 fig, ax = plt.subplots()
-for i in range(0,4):
-    df_season=df_temp.loc[df_temp['season']==i, dataValues]
-    height, bins = np.histogram(df_season)
-    ax.bar(bins[:-1], height*100/df_season.count(), width= .25, label= seasonNames[i])
+for i in df_seasons:
+    seasonData=df_temp.loc[df_temp['season']==i, dataValues]
+    print(seasonData.min())
+    print(seasonData.max())
+    height, bins = np.histogram(seasonData,bins=50, range= (seasonData.min(), seasonData.max()))
+    ax.bar(bins[:-1], height*100/seasonData.count(), width= .25, label= seasonNames[i])
 
 
 plt.legend()
